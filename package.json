@@ -1,0 +1,12 @@
+{
+  "name": "case-management",
+  "version": "1.0.0",
+  "description": "its a case management backend",
+  "license": "ISC",
+  "author": "arnav",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "hey"
+  }
+}
