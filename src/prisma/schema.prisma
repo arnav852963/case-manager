@@ -11,9 +11,122 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  MANAGER
+  FINANCE
+  CLIENT
+}
 
+enum CaseStatus {
+  PENDING
+  UNDER_REVIEW
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+}
 
+enum ServiceStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
 
+enum PaymentMethod {
+  UPI
+  CARD
+  BANK_TRANSFER
+  OTHER
+}
 
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  ASSIGN
+  PAYMENT
+}
 
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  password     String?
+  role         Role     @default(CLIENT)
+  is_active    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  casesCreated  Case[] @relation("CreatedCases")
+  casesAssigned Case[] @relation("AssignedCases")
+  serviceRecords ServiceRecord[]
+  payments      Payment[]
+  auditLogs     AuditLog[]
+  attachments   Attachment[]
+}
 
+model Case {
+  id            String          @id @default(uuid())
+  createdBy_id  String
+  assignedTo_id String?
+  description   String
+  status        CaseStatus      @default(PENDING)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  createdBy     User            @relation("CreatedCases", fields: [createdBy_id], references: [id])
+  assignedTo    User?           @relation("AssignedCases", fields: [assignedTo_id], references: [id])
+  serviceRecords ServiceRecord[]
+  auditLogs      AuditLog[]
+  payments       Payment[]
+  attachments    Attachment[]
+}
+
+model ServiceRecord {
+  id          String        @id @default(uuid())
+  case_id     String
+  user_id     String
+  description String
+  status      ServiceStatus @default(TODO)
+  createdAt   DateTime      @default(now())
+  case        Case          @relation(fields: [case_id], references: [id])
+  user        User          @relation(fields: [user_id], references: [id])
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  case_id         String
+  user_id         String
+  amount          Decimal        @db.Decimal(10, 2)
+  status          String
+  payment_method  PaymentMethod
+  invoice_url     String?
+  transaction_id  String?
+  reference_code  String?
+  remark          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  case            Case           @relation(fields: [case_id], references: [id])
+  user            User           @relation(fields: [user_id], references: [id])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  user_id    String
+  case_id    String?
+  entity     String
+  entity_id  String
+  action     AuditAction
+  timestamp  DateTime    @default(now())
+  user       User        @relation(fields: [user_id], references: [id])
+  case       Case?       @relation(fields: [case_id], references: [id])
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  user_id    String
+  case_id    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  case       Case     @relation(fields: [case_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
+}
