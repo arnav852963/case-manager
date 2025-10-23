@@ -2,7 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import cors from "cors"
 import cookie from "cookie-parser"
-import {rate_limit} from "./middlewares/ratelimiter.js";
+import {rate_limit} from "./middlewares/ratelimiter.middleware.js";
 
 dotenv.config({
     path:"./.env"
