@@ -3,3 +3,4 @@
 node_modules
 public.temp
 /src/generated/prisma
+firebase-service.json
