@@ -2,7 +2,8 @@ import jwt from "jsonwebtoken";
 import {asyncHandler} from "../utilities/asyncHandler.js";
 import {ApiError} from "../utilities/ApiError.js";
 
-import {Prisma} from "@prisma/client/extension";
+import {prisma} from "../utilities/prisma.js";
+
 export const jwt_auth = asyncHandler(async (req,_,next)=>{
     try {
         const token = req?.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
@@ -10,7 +11,7 @@ export const jwt_auth = asyncHandler(async (req,_,next)=>{
 
         const decodedToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         if (!decodedToken) throw new ApiError("Invalid token");
-        const user = await Prisma.User.findUnique({
+        const user = await prisma.User.findUnique({
             where:{
                 id:decodedToken?._id
             }

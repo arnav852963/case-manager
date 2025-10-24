@@ -8,7 +8,7 @@ export const manager_auth = asyncHandler(async (req,_,next)=>{
 
         const decodedToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         if (!decodedToken) throw new ApiError("Invalid token");
-        if (decodedToken.role !== "MANAGER") throw new ApiError(403, "you are not authorized to access this resource")
+        if (decodedToken.role !== "MANAGER" && decodedToken.role!=="ADMIN") throw new ApiError(403, "you are not authorized to access this resource")
 
         next();
     } catch (e){

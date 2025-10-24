@@ -22,4 +22,15 @@ app.use(cookie())
 app.use(rate_limit)
 
 
+import authRoutes from "./routes/auth.routes.js";
+app.use("/api/v1/auth" , authRoutes);
+
+import userRoutes from "./routes/user.routes.js";
+app.use("/api/v1/users" , userRoutes);
+
+import caseRoutes from "./routes/case.routes.js";
+app.use("/api/v1/cases" , caseRoutes);
+
+import servicerecordsRoutes from "./routes/servicerecords.routes.js";
+app.use("/api/v1/servicerecords" , servicerecordsRoutes);
 export {app}

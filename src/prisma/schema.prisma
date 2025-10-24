@@ -45,6 +45,7 @@ enum AuditAction {
   DELETE
   LOGIN
   ASSIGN
+  ADD_NOTE
   PAYMENT
 }
 
@@ -56,6 +57,7 @@ model User {
   role         Role     @default(CLIENT)
   isActive    Boolean  @default(true)
   refreshToken String?
+  byAdmin    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   casesCreated  Case[] @relation("CreatedCases")
@@ -87,8 +89,10 @@ model ServiceRecord {
   caseId     String
   userId     String
   description String
+  notes       String[]
   status      ServiceStatus @default(TODO)
   createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   case        Case          @relation(fields: [caseId], references: [id])
   user        User          @relation(fields: [userId], references: [id])
 }
