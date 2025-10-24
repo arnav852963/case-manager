@@ -2,8 +2,8 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
-  envFile = "./.env"
+
+
 }
 
 datasource db {
@@ -54,7 +54,8 @@ model User {
   email        String   @unique
   password     String?
   role         Role     @default(CLIENT)
-  is_active    Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  refreshToken String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   casesCreated  Case[] @relation("CreatedCases")
@@ -67,14 +68,14 @@ model User {
 
 model Case {
   id            String          @id @default(uuid())
-  createdBy_id  String
-  assignedTo_id String?
+  createdById  String
+  assignedToId String?
   description   String
   status        CaseStatus      @default(PENDING)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  createdBy     User            @relation("CreatedCases", fields: [createdBy_id], references: [id])
-  assignedTo    User?           @relation("AssignedCases", fields: [assignedTo_id], references: [id])
+  createdBy     User            @relation("CreatedCases", fields: [createdById], references: [id])
+  assignedTo    User?           @relation("AssignedCases", fields: [assignedToId], references: [id])
   serviceRecords ServiceRecord[]
   auditLogs      AuditLog[]
   payments       Payment[]
@@ -83,50 +84,50 @@ model Case {
 
 model ServiceRecord {
   id          String        @id @default(uuid())
-  case_id     String
-  user_id     String
+  caseId     String
+  userId     String
   description String
   status      ServiceStatus @default(TODO)
   createdAt   DateTime      @default(now())
-  case        Case          @relation(fields: [case_id], references: [id])
-  user        User          @relation(fields: [user_id], references: [id])
+  case        Case          @relation(fields: [caseId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
 }
 
 model Payment {
   id              String         @id @default(uuid())
-  case_id         String
-  user_id         String
+  caseId         String
+  userId         String
   amount          Decimal        @db.Decimal(10, 2)
   status          String
-  payment_method  PaymentMethod
-  invoice_url     String?
-  transaction_id  String?
-  reference_code  String?
+  paymentMethod  PaymentMethod
+  invoiceUrl     String?
+  transactionId  String?
+  referenceCode  String?
   remark          String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  case            Case           @relation(fields: [case_id], references: [id])
-  user            User           @relation(fields: [user_id], references: [id])
+  case            Case           @relation(fields: [caseId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
   id         String      @id @default(uuid())
-  user_id    String
-  case_id    String?
+  userId    String
+  caseId    String?
   entity     String
-  entity_id  String
+  entityId  String
   action     AuditAction
   timestamp  DateTime    @default(now())
-  user       User        @relation(fields: [user_id], references: [id])
-  case       Case?       @relation(fields: [case_id], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  case       Case?       @relation(fields: [caseId], references: [id])
 }
 
 model Attachment {
   id         String   @id @default(uuid())
-  user_id    String
-  case_id    String
+  userId    String
+  caseId    String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  case       Case     @relation(fields: [case_id], references: [id])
-  user       User     @relation(fields: [user_id], references: [id])
+  case       Case     @relation(fields: [caseId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 }

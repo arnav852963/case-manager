@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import {asyncHandler} from "../utilities/asyncHandler.js";
 import {ApiError} from "../utilities/ApiError.js";
-const jwt_auth = asyncHandler(async (req,_,next)=>{
+export const admin_auth = asyncHandler(async (req,_,next)=>{
     try {
         const token = req?.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
         if (!token) throw new ApiError("please login to access this resource");
