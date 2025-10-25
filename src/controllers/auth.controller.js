@@ -38,7 +38,8 @@ const firebase_login = asyncHandler(async (req,res)=>{
 
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     if(!decodedToken) throw new Error("Invalid idToken")
-    const {  email , name , role } = decodedToken;
+    const {  email , name , role, email_verified } = decodedToken;
+    if(!email_verified) throw new ApiError(400 , "please verify your email before logging in");
 
      const exists = await prisma.User.findUnique({
          where:{
