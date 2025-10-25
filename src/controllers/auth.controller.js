@@ -38,7 +38,7 @@ const firebase_login = asyncHandler(async (req,res)=>{
 
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     if(!decodedToken) throw new Error("Invalid idToken")
-    const {  email , name , role, email_verified } = decodedToken;
+    const {  email , name , email_verified } = decodedToken;
     if(!email_verified) throw new ApiError(400 , "please verify your email before logging in");
 
      const exists = await prisma.User.findUnique({
@@ -48,62 +48,14 @@ const firebase_login = asyncHandler(async (req,res)=>{
 
      });
 
-    if(exists && !exists.byAdmin) throw new ApiError(400 , "user already exists , please login instead");
-    if(exists && exists.byAdmin) {
-        const {accessToken , refreshToken} = generateAccessRefreshToken({
-            id:exists.id,
-            role:exists.role,
+    if(exists) throw new ApiError(400 , " please login using normal login");
 
-        } , {
-            id:exists.id
-        });
-        if(!accessToken || !refreshToken) throw new ApiError(500 , "Error generating tokens");
-        const user_refreshed = await prisma.User.update({
-            where:{
-                id:exists.id
-            },
-            data:{
-                refreshToken:refreshToken
-            },
-            select:{
-                id:true,
-                email:true,
-                username:true,
-                role:true
-            }
-        });
-        const options = {
-            httpOnly:true,
-            secure:true
-        };
 
-        const log = auditLog({
-            userId:exists.id,
-            entity:"User",
-            entityId:exists.id,
-            action:"LOGIN",
-
-        })
-        if(!log) throw new ApiError(500 , "login log not created");
-        return res
-            .status(201)
-            .cookie("accessToken" , accessToken , options)
-            .cookie("refreshToken" , refreshToken , options)
-            .json(new ApiResponse(200 ,{
-                user:user_refreshed,
-                accessToken:accessToken,
-                refreshToken:refreshToken
-            }, "user logged in successfully via firebase" ));
-    }
-
-    if(role === "ADMIN") {
-        if(email !== process.env.ADMIN_EMAIL_VERIFY) throw new ApiError(400 , "not authorised to sign in as admin")
-    }
     const user = await prisma.User.create({
         data:{
             email:email,
             username:name,
-            role:role
+
         }
 
     });
@@ -163,6 +115,7 @@ const firebase_login = asyncHandler(async (req,res)=>{
 
 })
 
+
 const logout = asyncHandler(async (req,res)=>{
     const user = await prisma.User.update({
         where:{
@@ -191,4 +144,68 @@ const logout = asyncHandler(async (req,res)=>{
 
 })
 
-export {firebase_login  , logout };
+
+const adminRegister = asyncHandler(async (req,res)=>{
+    // This function can be implemented to register admin users if needed
+});
+
+const adminLogin = asyncHandler(async (req,res)=>{
+    // This function can be implemented to login admin users if needed
+});
+
+const managerFinanceLogin = asyncHandler(async (req,res)=>{
+    // This function can be implemented to login manager and finance users if needed
+});
+
+const refreshAccessToken = asyncHandler(async (req,res)=>{
+    const token = req?.cookies?.refreshToken;
+    if(!token) throw new ApiError(401 , "Login required");
+    const decoded = await jwt.verify(token , process.env.REFRESH_TOKEN_SECRET);
+    if(!decoded) throw new ApiError(401 , "Invalid refresh token , login required");
+    const user = await prisma.User.findUnique({
+        where:{
+            id:decoded.id
+        }
+
+    });
+    if(!user) throw new ApiError(401 , "Invalid refresh token , login required");
+    if(user.refreshToken !== token) throw new ApiError(401 , "Token mismatch , login required");
+    const {accessToken , refreshToken} = generateAccessRefreshToken({
+        id:user.id,
+        role:user.role
+
+    } , {
+        id:user.id
+    });
+    if(!accessToken || !refreshToken) throw new ApiError(500 , "Error generating tokens");
+    const user_refreshed = await prisma.User.update({
+        where:{
+            id:user.id
+        },
+        data:{
+            refreshToken:refreshToken
+        },
+        select:{
+            id:true,
+            email:true,
+            username:true,
+            role:true
+        }
+    });
+    const options = {
+        httpOnly:true,
+        secure:true
+    };
+
+    return res
+        .status(201)
+        .cookie("accessToken" , accessToken , options)
+        .cookie("refreshToken" , refreshToken , options)
+        .json(new ApiResponse(200 ,{
+            user:user_refreshed,
+            accessToken:accessToken,
+            refreshToken:refreshToken
+        }, "Access token refreshed successfully" ));
+
+});
+export {firebase_login  , logout ,refreshAccessToken   };
