@@ -101,4 +101,36 @@ const  deleteUser = asyncHandler(async (req,res)=>{
     res.status(200).json(new ApiResponse(200, {}, "User deleted successfully"))
 });
 
-export { createUser , getUsers , getUserProfile , assignRoleToUser , deleteUser};
+const searchUsers = asyncHandler(async (req,res)=>{
+    const {query } = req.query;
+    if(!query.trim()) throw new ApiError(400, "Search query is required");
+  let {page} = req.query;
+    page = page ? parseInt(page) : 1;
+    const skip = (page -1) * 10;
+    const users = await prisma.User.findMany({
+        where:{
+            OR:[
+                {username:{contains:query , mode:"insensitive"}},
+                {email:{contains:query , mode:"insensitive"}}
+            ],
+            role:{not:"admin"}
+        },
+        skip:skip,
+        take:10,
+        orderedBy:{createdAt:"desc"},
+        select:{
+            password:false,
+            refreshToken:false
+        }
+    });
+    if(!users || users.length ===0) throw new ApiError(404, "No users found matching the query");
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {
+            users:users
+
+        }, "users fetched successfully"));
+
+});
+
+export { createUser , getUsers , getUserProfile , assignRoleToUser , deleteUser,searchUsers};

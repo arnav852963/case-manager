@@ -157,4 +157,20 @@ const deleteCase = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, {}, "Case deleted successfully"));
 });
 
-export { createCase , getCasesAdmin , getCasesManager , getCaseId,assignCase , updateCaseStatus , deleteCase}
+const searchCases = asyncHandler(async (req, res) => {
+    const { query } = req.query;
+    let  {page}  = req.query;
+    page = page ? parseInt(page) : 1;
+    if (!query.trim()) throw new ApiError(400, "Search query is required");
+    const cases = await prisma.Case.findMany({
+        where: {
+            description: { contains: query, mode: 'insensitive' }
+        },
+        orderedBy: { createdAt: 'desc' },
+        skip: (page - 1) * 10,
+        take: 10
+    });
+    if (!cases || cases.length === 0) throw new ApiError(404, "No cases fetched");
+    res.status(200).json(new ApiResponse(200,  cases, "Cases fetched successfully for search query"));
+});
+export { createCase , getCasesAdmin , getCasesManager , getCaseId,assignCase , updateCaseStatus , deleteCase , searchCases}

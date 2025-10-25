@@ -5,7 +5,7 @@ import {
     createCase, deleteCase,
     getCaseId,
     getCasesAdmin,
-    getCasesManager,
+    getCasesManager, searchCases,
     updateCaseStatus
 } from "../controllers/case.controller.js";
 import {admin_auth} from "../middlewares/admin_auth.middleware.js";
@@ -22,5 +22,6 @@ caseRoutes.route("/getCase/:caseId").get( getCaseId);
 caseRoutes.route("/assignCase/:caseId/:managerId").patch(admin_auth , assignCase);
 caseRoutes.route("/updateCaseStatus/:caseId").patch(manager_auth , updateCaseStatus);
 caseRoutes.route("/deleteCase/:caseId").delete(deleteCase);
+caseRoutes.route("/searchCases").get( manager_auth,searchCases);
 
 export default caseRoutes;
