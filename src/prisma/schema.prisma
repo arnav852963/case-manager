@@ -1,0 +1,162 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  FINANCE
+  CLIENT
+}
+
+enum CaseStatus {
+  PENDING
+  UNDER_REVIEW
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+}
+
+enum ServiceStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  BANK_TRANSFER
+  OTHER
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  ASSIGN
+  ADD_NOTE
+  PAYMENT
+  REFUND
+  PASSWORD_RESET
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  password     String?
+  role         Role     @default(CLIENT)
+  isActive    Boolean  @default(true)
+  refreshToken String?
+  byAdmin    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  casesCreated  Case[] @relation("CreatedCases")
+  casesAssigned Case[] @relation("AssignedCases")
+  serviceRecords ServiceRecord[]
+  payments      Payment[]
+  auditLogs     AuditLog[]
+  attachments   Attachment[]
+}
+
+model Case {
+  id            String          @id @default(uuid())
+  createdById  String
+  assignedToId String?
+  description   String
+  status        CaseStatus      @default(PENDING)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  createdBy     User            @relation("CreatedCases", fields: [createdById], references: [id])
+  assignedTo    User?           @relation("AssignedCases", fields: [assignedToId], references: [id])
+  serviceRecords ServiceRecord[]
+  auditLogs      AuditLog[]
+  payments       Payment[]
+  attachments    Attachment[]
+}
+
+model ServiceRecord {
+  id          String        @id @default(uuid())
+  caseId     String
+  userId     String
+  description String
+  notes       String[]
+  status      ServiceStatus @default(TODO)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  case        Case          @relation(fields: [caseId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  caseId         String
+  userId         String
+  amount          Decimal        @db.Decimal(10, 2)
+  status          PaymentStatus   @default(PENDING)
+  paymentMethod  PaymentMethod
+  invoiceUrl     String?
+  transactionId  String?
+  referenceCode  String?
+  remark          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  case            Case           @relation(fields: [caseId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+  refund          Refund?
+
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId    String
+  caseId    String?
+  entity     String
+  entityId  String
+  action     AuditAction
+  timestamp  DateTime    @default(now())
+  user       User        @relation(fields: [userId], references: [id])
+  case       Case?       @relation(fields: [caseId], references: [id])
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  userId    String
+  caseId    String
+  attachments String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  case       Case     @relation(fields: [caseId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Refund {
+  id          String   @id @default(uuid())
+  paymentId   String @unique
+  amount      Decimal
+  reason      String? @default("FINANCE")
+  processedBy String
+  createdAt   DateTime @default(now())
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+}
+
