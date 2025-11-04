@@ -6,8 +6,33 @@ import {encryptPassword} from "../utilities/encrypt.js";
 import admin from "../utilities/firebaseAdmin.js";
 import {auditLog} from "../utilities/auditlog.js";
 
+const completeProfile = asyncHandler(async (req, res) => {
+    const {username , fullName}  = req.body;
+    if(!username || !username.trim() || !fullName || !fullName.trim()) throw new ApiError(400, "All fields are required");
+    const user = await prisma.User.update({
+        where: {id: req?.user?.id},
+        data: {
+            username: username,
+            fullName: fullName,
+        }
+    });
+    if(!user) throw new ApiError(500, "Failed to complete profile");
+
+    const log = await auditLog({
+        userId:req.user.id,
+        entity:"User",
+        entityId:user.id,
+        action:"PROFILE_COMPLETION"
+    })
+    if(!log) throw new ApiError(500 , "user log not created");
+
+    res.status(200).json(new ApiResponse(200, user, "Profile completed successfully"));
+
+
+});
+
 const createUser = asyncHandler(async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { username, email,password ,fullName , role } = req.body;
 
 
     const existingUser = await prisma.User.findUnique({ where: { email } });
@@ -18,7 +43,8 @@ try {
     const firebaseuser = await admin.auth().createUser({
         email,
         password,
-        displayName: name
+        displayName: username,
+
     })
     if(!firebaseuser) throw new ApiError(500, "Failed to create user in Firebase");
 } catch (e) {
@@ -27,14 +53,20 @@ try {
 
     const newUser = await prisma.User.create({
         data: {
-            username:name,
+            username:username,
             email:email,
-            password:encryptPassword(password),
+            fullName:fullName,
             role:role,
             byAdmin:true
         },
         select:{
-            password:false
+            id:true,
+            username:true,
+            email:true,
+            fullName:true,
+            role:true,
+            createdAt:true,
+
         }
     });
 
@@ -57,45 +89,17 @@ try {
 
 const getUserProfile= asyncHandler(async (req,res)=>{
     const userId = req?.user?.id;
-    if(req?.user?.role !=="CLIENT"){
 
-    }
     const user = await prisma.User.findUnique({
         where:{
             id:userId
         },
-        select:{
-            username:true,
-            email:true,
-            role:true,
-            createdAt:true,
-            isActive:true,
-            casesCreated:{
-
-                id:true,
-                description:true,
-                status:true,
-                createdAt:true,
-
-
-            },
-            casesAssigned:{
-                id:true,
-                description:true,
-                status:true,
-                createdAt:true,
-
-            },
-            payments:true,
-            attachments:true
-
-
-        }
 
 
 
     });
     if(!user) throw new ApiError(404, "User not found");
+    user.refreshToken =""
 
     res.status(200).json(new ApiResponse(200, user, "User profile fetched successfully"));
 });
@@ -192,4 +196,4 @@ const changePassword = asyncHandler(async (req,res)=>{
 
 });
 
-export { createUser ,  getUserProfile ,  deleteUser,searchUsers , changePassword};
+export { createUser ,  getUserProfile ,  deleteUser,searchUsers , changePassword , completeProfile};

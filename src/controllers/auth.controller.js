@@ -35,14 +35,14 @@ const generateAccessRefreshToken =  (info_access , info_refresh)=>{
 const firebase_login = asyncHandler(async (req,res)=>{
 
 
-    const {idToken , name } = req.body;
+    const {idToken  } = req.body;
 
     if(!idToken) throw new Error("idToken is required");
 
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     if(!decodedToken) throw new Error("Invalid idToken")
     const {  email  } = decodedToken;
-    if(!email || !name) throw new ApiError(400 , "Email not found in token");
+    if(!email ) throw new ApiError(400 , "Email not found in token");
 
 
      const exists = await prisma.User.findUnique({
@@ -71,7 +71,6 @@ const firebase_login = asyncHandler(async (req,res)=>{
             select:{
                 id:true,
                 email:true,
-                username:true,
                 role:true
             }
         });
@@ -104,7 +103,7 @@ const firebase_login = asyncHandler(async (req,res)=>{
     const user = await prisma.User.create({
         data:{
             email:email,
-            username:name,
+
 
         }
 
@@ -128,7 +127,6 @@ const firebase_login = asyncHandler(async (req,res)=>{
         select:{
             id:true,
             email:true,
-            username:true,
             role:true
         }
     });
@@ -190,19 +188,24 @@ const logout = asyncHandler(async (req,res)=>{
 
 
 const adminLoginRegister = asyncHandler(async (req,res)=>{
+
+
     const {idToken} = req.body;
     if(!idToken) throw new ApiError("idToken is required");
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     if(!decodedToken) throw new ApiError("Invalid idToken")
-    const {  email , name , email_verified } = decodedToken;
-    if(!email_verified) throw new ApiError(400 , "please verify your email before registering as admin");
-    if(email !== process.env.ADMIN_EMAIL) throw new ApiError(403 , "Unauthorized to register as admin");
+    const {  email } = decodedToken;
+    // if(!email_verified) throw new ApiError(400 , "please verify your email before registering as admin");
+
+    if(email !== process.env.ADMIN_EMAIL_VERIFY) throw new ApiError(403 , "Unauthorized to register as admin");
      const exists = await prisma.User.findUnique({
          where:{
              email:email
          }
         });
+
      if(exists) {
+
          const {accessToken , refreshToken} = generateAccessRefreshToken({
              id:exists.id,
              role:exists.role,
@@ -211,6 +214,7 @@ const adminLoginRegister = asyncHandler(async (req,res)=>{
              id:exists.id
          });
          if(!accessToken || !refreshToken) throw new ApiError(500 , "Error generating tokens");
+
          const user_refreshed = await prisma.User.update({
              where:{
                  id:exists.id
@@ -221,21 +225,26 @@ const adminLoginRegister = asyncHandler(async (req,res)=>{
              select:{
                  id:true,
                  email:true,
-                 username:true,
                  role:true
              }
          });
+         if(!user_refreshed) throw new ApiError(500 , "Error refreshing admin user");
+
+
          const options = {
              httpOnly:true,
              secure:true
          };
+
+
          const log = await auditLog({
-             userId:exists.id,
+             userId:user_refreshed.id,
              entity:"User",
-             entityId:user.id,
+             entityId:user_refreshed.id,
              action:"LOGIN",
 
          })
+
          if(!log) throw new ApiError(500 , "login log not created")
 
 
@@ -250,10 +259,11 @@ const adminLoginRegister = asyncHandler(async (req,res)=>{
                  refreshToken:refreshToken
              }, "Admin user logged in successfully" ));
      }
+
+
     const user = await prisma.User.create({
         data:{
             email:email,
-            username:name,
             role:"ADMIN"
         }
 
@@ -285,7 +295,6 @@ const adminLoginRegister = asyncHandler(async (req,res)=>{
         select:{
             id:true,
             email:true,
-            username:true,
             role:true
         }
     });

@@ -49,6 +49,7 @@ enum AuditAction {
   PAYMENT
   REFUND
   PASSWORD_RESET
+  PROFILE_COMPLETION
 }
 
 enum PaymentStatus {
@@ -62,7 +63,7 @@ enum PaymentStatus {
 
 model User {
   id           String   @id @default(uuid())
-  username     String   @unique
+  username     String?   @unique
   email        String   @unique
   fullName     String?
   password     String?
