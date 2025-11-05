@@ -14,10 +14,10 @@ const caseRoutes= Router();
 
 caseRoutes.use(jwt_auth);
 
-caseRoutes.route("/createCase").post(createCase)
+caseRoutes.route("/createCase").post(createCase) //-
 
 caseRoutes.route("/getCasesManager").get(manager_auth , getCasesManager);
-caseRoutes.route("/getCase/:caseId").get( getCaseId);
+caseRoutes.route("/getCase/:caseId").get( getCaseId); //-
 caseRoutes.route("/assignCase/:caseId/:managerId").patch(admin_auth , assignCase);
 caseRoutes.route("/updateCaseStatus/:caseId").patch(manager_auth , updateCaseStatus);
 caseRoutes.route("/deleteCase/:caseId").delete(deleteCase);

@@ -97,6 +97,14 @@ const getUserProfile= asyncHandler(async (req,res)=>{
         where:{
             id:userId
         },
+        include:{
+            casesCreated:true,
+            casesAssigned:true,
+            serviceRecords:true,
+            payments:true,
+            auditLogs:true,
+            attachments:true
+        }
 
 
 

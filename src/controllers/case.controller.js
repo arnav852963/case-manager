@@ -57,6 +57,14 @@ const getCaseId = asyncHandler(async (req, res) => {
         where: {
             id: caseId
         },
+        include:{
+            createdBy:true,
+            assignedTo:true ,
+            attachments:true,
+            serviceRecords:true,
+            payments:true,
+            auditLogs:true
+        }
 
     });
     if (!caseItem) throw new ApiError(500, "Case not found");

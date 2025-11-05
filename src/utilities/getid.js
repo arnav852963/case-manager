@@ -18,7 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const email = "gradientenergy@gmail.com";
+const email = "arnavticku@gmail.com";
 const password = "Arnav@123";
 
 

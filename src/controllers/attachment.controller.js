@@ -49,7 +49,8 @@ const getAttachmentsByCase = asyncHandler(async (req, res) => {
 
     const attachments = await prisma.Attachment.findMany({
         where:{
-            caseId:caseId
+            caseId:caseId,
+            userId:req.user.id
         },
         select:{
             attachments: true,
@@ -81,7 +82,8 @@ const deleteAttachment = asyncHandler(async (req, res) => {
 
     const attachment = await prisma.Attachment.findUnique({
         where:{
-            id:attachmentId
+            id:attachmentId,
+            userId:req.user.id
         }
     });
     if(!attachment) throw new ApiError(404, "Attachment not found");
