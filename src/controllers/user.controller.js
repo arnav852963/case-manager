@@ -5,7 +5,10 @@ import {ApiResponse} from "../utilities/ApiResponse.js";
 import {encryptPassword} from "../utilities/encrypt.js";
 import admin from "../utilities/firebaseAdmin.js";
 import {auditLog} from "../utilities/auditlog.js";
-
+import dotenv from "dotenv";
+dotenv.config({
+    path:"./.env"
+})
 const completeProfile = asyncHandler(async (req, res) => {
     const {username , fullName}  = req.body;
     if(!username || !username.trim() || !fullName || !fullName.trim()) throw new ApiError(400, "All fields are required");
@@ -109,27 +112,6 @@ const getUserProfile= asyncHandler(async (req,res)=>{
 
 
 
-const  deleteUser = asyncHandler(async (req,res)=>{
-    const {userId} = req.params
-    if(!userId) throw new ApiError(400, "User ID is required")
-
-    const user = await prisma.User.delete({
-        where:{id:userId}
-    })
-    if(!user) throw new ApiError(404, "User not found")
-    const log = await auditLog({
-        userId:req.user.id,
-        entity:"User",
-        entityId:user.id,
-        action:"DELETE"
-
-    })
-    if(!log) throw new ApiError(500 , "user log not created");
-
-    res.status(200).json(new ApiResponse(200, {}, "User deleted successfully"))
-});
-
-
 
 
 const searchUsers = asyncHandler(async (req,res)=>{
@@ -167,7 +149,7 @@ const changePassword = asyncHandler(async (req,res)=>{
     if(!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) throw new ApiError(400 , "All fields are required");
     if(newPassword !== confirmPassword) throw new ApiError(400 , "New password and confirm password do not match");
     const firebase = await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`,
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY_WEB}`,
         {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -181,7 +163,8 @@ const changePassword = asyncHandler(async (req,res)=>{
 
     const data = await firebase.json();
     if (data.error) throw new ApiError(401, "Invalid old password");
-    await admin.auth().updateUser(data.localId, { password: newPassword });
+    const updatePassword = await admin.auth().updateUser(data.localId, { password: newPassword });
+    if(!updatePassword) throw new ApiError(500 , "Failed to update password in Firebase");
     const log = auditLog({
         userId:req.user.id,
         entity:"User",
@@ -190,10 +173,21 @@ const changePassword = asyncHandler(async (req,res)=>{
 
     })
     if(!log) throw new ApiError(500 , "user log not created");
+    const user = await prisma.User.update({
+        where:{
+            id:req.user.id
+        },
+        data:{
+            refreshToken:null
+        }
+    });
+    if(!user) throw new ApiError(500 , "Failed to update user refresh token");
     return res
         .status(200)
+        .clearCookie("accessToken")
+        .clearCookie("refreshToken")
         .json(new ApiResponse(200 , {} , "Password changed successfully , kindly login again"));
 
 });
 
-export { createUser ,  getUserProfile ,  deleteUser,searchUsers , changePassword , completeProfile};
+export { createUser ,  getUserProfile ,searchUsers , changePassword , completeProfile};
