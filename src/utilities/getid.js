@@ -1,8 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import dotenv from "dotenv";
+dotenv.config({
+    path:"./.env"
+})
+
 
 const firebaseConfig = {
-        apiKey: "AIzaSyCtbmdq4623z7o-_y8DeraCaPbQQNCIiKI",
+        apiKey: process.env.FIREBASE_API_KEY_WEB,
         authDomain: "casemanagement-510e8.firebaseapp.com",
         projectId: "casemanagement-510e8",
         storageBucket: "casemanagement-510e8.firebasestorage.app",

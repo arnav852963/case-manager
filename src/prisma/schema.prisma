@@ -43,6 +43,7 @@ enum AuditAction {
   CREATE
   UPDATE
   DELETE
+  CLOSED
   LOGIN
   ASSIGN
   ADD_NOTE
@@ -89,6 +90,8 @@ model Case {
   status        CaseStatus      @default(PENDING)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  isClosed     Boolean         @default(false)
+  closedAt    DateTime?
   createdBy     User            @relation("CreatedCases", fields: [createdById], references: [id])
   assignedTo    User?           @relation("AssignedCases", fields: [assignedToId], references: [id])
   serviceRecords ServiceRecord[]

@@ -6,6 +6,7 @@ import {encryptPassword} from "../utilities/encrypt.js";
 import admin from "../utilities/firebaseAdmin.js";
 import {auditLog} from "../utilities/auditlog.js";
 import dotenv from "dotenv";
+import {changePasswordMethod} from "../utilities/changePassword.js";
 dotenv.config({
     path:"./.env"
 })
@@ -156,23 +157,8 @@ const changePassword = asyncHandler(async (req,res)=>{
     const {oldPassword , newPassword , confirmPassword} = req.body;
     if(!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) throw new ApiError(400 , "All fields are required");
     if(newPassword !== confirmPassword) throw new ApiError(400 , "New password and confirm password do not match");
-    const firebase = await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY_WEB}`,
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: req?.user?.email,
-                password: oldPassword,
-                returnSecureToken: true,
-            }),
-        }
-    );
-
-    const data = await firebase.json();
-    if (data.error) throw new ApiError(401, "Invalid old password");
-    const updatePassword = await admin.auth().updateUser(data.localId, { password: newPassword });
-    if(!updatePassword) throw new ApiError(500 , "Failed to update password in Firebase");
+    const changePasswordInFirebase = await changePasswordMethod(oldPassword , newPassword , req?.user);
+    if(!changePasswordInFirebase) throw new ApiError(500 , "Failed to change password in Firebase");
     const log = auditLog({
         userId:req.user.id,
         entity:"User",

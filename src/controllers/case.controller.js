@@ -142,20 +142,37 @@ const updateCaseStatus = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, updatedCase, "Case status updated successfully"));
 });
 
-const deleteCase = asyncHandler(async (req, res) => {
+
+
+const closeCase = asyncHandler(async (req, res) => {
     const { caseId } = req.params;
     if (!caseId) throw new ApiError(400, "Case ID is required");
-    const deletedCase = await prisma.Case.delete({
+    const closedCase = await prisma.Case.update({
         where: {
             id: caseId
+        },
+        data:{
+            isClosed:true,
+            status:"CLOSED",
+            closedAt:new Date()
         }
     });
-    if (!deletedCase) throw new ApiError(500, "Failed to delete case");
+    if (!closedCase) throw new ApiError(500, "Failed to delete case");
+    const serviceRecord = await prisma.ServiceRecord.create({
+        data:{
+            caseId:caseId,
+            userId:req.user.id,
+            description:`case was closed`,
+
+        }
+    })
+    if(!serviceRecord) throw new ApiError(500 , "service record not created");
+
     const log = auditLog({
         userId:req.user.id,
         entity:"Case",
-        entityId:deletedCase.id,
-        action:"DELETE"
+        entityId:closedCase.id,
+        action:"CLOSED"
 
     })
     if(!log) throw new ApiError(500 , "case log not created");
@@ -178,4 +195,4 @@ const searchCases = asyncHandler(async (req, res) => {
     if (!cases || cases.length === 0) throw new ApiError(404, "No cases fetched");
     res.status(200).json(new ApiResponse(200,  cases, "Cases fetched successfully for search query"));
 });
-export { createCase ,  getCasesManager , getCaseId,assignCase , updateCaseStatus , deleteCase , searchCases}
+export { createCase ,  getCasesManager , getCaseId,assignCase , updateCaseStatus , closeCase , searchCases}

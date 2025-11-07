@@ -1,8 +1,8 @@
 import {Router} from "express";
 import {jwt_auth} from "../middlewares/jwt_auth.middleware.js";
 import {
-    assignCase,
-    createCase, deleteCase,
+    assignCase, closeCase,
+    createCase,
     getCaseId,
     getCasesManager, searchCases,
     updateCaseStatus
@@ -20,7 +20,7 @@ caseRoutes.route("/getCasesManager").get(manager_auth , getCasesManager);
 caseRoutes.route("/getCase/:caseId").get( getCaseId); //-
 caseRoutes.route("/assignCase/:caseId/:managerId").patch(admin_auth , assignCase);
 caseRoutes.route("/updateCaseStatus/:caseId").patch(manager_auth , updateCaseStatus);
-caseRoutes.route("/deleteCase/:caseId").delete(deleteCase);
+caseRoutes.route("/deleteCase/:caseId").patch(closeCase);
 caseRoutes.route("/searchCases").get( manager_auth,searchCases);
 
 export default caseRoutes;
